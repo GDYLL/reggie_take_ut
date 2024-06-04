@@ -10,5 +10,6 @@ func employeeRouter(r *gin.Engine) {
 	{
 		// login
 		emp.POST("/login", controller.EmployeeController{}.Login())
+		emp.POST("", controller.EmployeeController{}.Save())
 	}
 }
