@@ -6,6 +6,7 @@ import (
 )
 
 func main() {
+
 	config.InitConfig()
 	router.InitRouter()
 
