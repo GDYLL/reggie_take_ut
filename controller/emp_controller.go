@@ -4,6 +4,7 @@ import (
 	"errors"
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -35,7 +36,10 @@ func (e EmployeeController) Login() gin.HandlerFunc {
 			})
 			return
 		}
-
+		if empStored.Status == 0 {
+			context.JSON(http.StatusOK, common.Error("该账户未启用，请联系管理员启用"))
+			return
+		}
 		if empStored.Password == password {
 			context.JSON(http.StatusOK, common.Success("登陆成功"))
 		} else {
@@ -45,6 +49,7 @@ func (e EmployeeController) Login() gin.HandlerFunc {
 		}
 	}
 }
+
 func (e EmployeeController) Save() gin.HandlerFunc {
 	return func(context *gin.Context) {
 		var empInput entity.Employee
@@ -87,5 +92,45 @@ func (e EmployeeController) Save() gin.HandlerFunc {
 			context.JSON(http.StatusOK, common.Error("用户名已存在"))
 			return
 		}
+	}
+}
+
+func (e EmployeeController) Page() gin.HandlerFunc {
+	return func(context *gin.Context) {
+		page := context.DefaultQuery("page", "1")
+		pageSize := context.DefaultQuery("pageSize", "10")
+
+		pageNum, err := strconv.Atoi(page)
+		if err != nil || pageNum <= 0 {
+			context.JSON(http.StatusBadRequest, gin.H{"error": "无效的页码"})
+			return
+		}
+
+		pageSizeNum, err := strconv.Atoi(pageSize)
+		if err != nil || pageSizeNum <= 0 {
+			context.JSON(http.StatusBadRequest, gin.H{"error": "无效的页大小"})
+			return
+		}
+
+		offset := (pageNum - 1) * pageSizeNum
+		var employees []entity.Employee
+		err = global.DB.Table("employee").Offset(offset).Limit(pageSizeNum).Find(&employees).Error
+		if err != nil {
+			// 如果查询失败，返回错误信息
+			context.JSON(http.StatusInternalServerError, gin.H{"error": "查询失败"})
+			return
+		}
+		var total int64
+		err = global.DB.Table("employee").Count(&total).Error
+		if err != nil {
+			// 如果查询失败，返回错误信息
+			context.JSON(http.StatusInternalServerError, gin.H{"error": "查询失败"})
+			return
+		}
+		responseData := entity.ResponseData{
+			Records: employees,
+			Total:   total,
+		}
+		context.JSON(http.StatusOK, common.Success(responseData))
 	}
 }
