@@ -6,9 +6,9 @@ import (
 )
 
 func categoryRouter(r *gin.Engine) {
-	cg := r.Group("/category")
+	cat := r.Group("/category")
 	{
-		cg.POST("", controller.CategoryController{}.Save())
-		cg.GET("/page", controller.CategoryController{}.Page())
+		cat.GET("/page", controller.CategoryController{}.Page())
+		cat.POST("", controller.CategoryController{}.Save())
 	}
 }

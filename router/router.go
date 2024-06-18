@@ -17,6 +17,5 @@ func InitRouter() {
 	employeeRouter(r)
 	categoryRouter(r)
 
-	//r.Run(":8080")
 	r.Run(":" + port)
 }
