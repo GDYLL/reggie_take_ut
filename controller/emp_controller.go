@@ -99,6 +99,7 @@ func (e EmployeeController) Page() gin.HandlerFunc {
 	return func(context *gin.Context) {
 		page := context.DefaultQuery("page", "1")
 		pageSize := context.DefaultQuery("pageSize", "10")
+		emName := context.DefaultQuery("name", "")
 
 		pageNum, err := strconv.Atoi(page)
 		if err != nil || pageNum <= 0 {
@@ -114,7 +115,13 @@ func (e EmployeeController) Page() gin.HandlerFunc {
 
 		offset := (pageNum - 1) * pageSizeNum
 		var employees []entity.Employee
-		err = global.DB.Table("employee").Offset(offset).Limit(pageSizeNum).Find(&employees).Error
+		if emName != "" {
+			// 添加模糊查询条件
+			err = global.DB.Table("employee").Where("name LIKE ?", "%"+emName+"%").
+				Offset(offset).Limit(pageSizeNum).Find(&employees).Error
+		} else {
+			err = global.DB.Table("employee").Offset(offset).Limit(pageSizeNum).Find(&employees).Error
+		}
 		if err != nil {
 			// 如果查询失败，返回错误信息
 			context.JSON(http.StatusInternalServerError, gin.H{"error": "查询失败"})
