@@ -16,6 +16,7 @@ func InitRouter() {
 
 	employeeRouter(r)
 	categoryRouter(r)
+	dishRouter(r)
 
 	r.Run(":" + port)
 }
