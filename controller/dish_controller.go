@@ -3,8 +3,10 @@ package controller
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/prynnekey/go-reggie/global"
+	"gorm.io/gorm"
 	"net/http"
 	"reggie_take_ut/common"
+	"reggie_take_ut/dto"
 	"reggie_take_ut/entity"
 	"strconv"
 )
@@ -12,38 +14,71 @@ import (
 type DishController struct {
 }
 
-func (c DishController) Page() gin.HandlerFunc {
+func (dc DishController) Page() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		num := c.DefaultQuery("page", "1")
-		size := c.DefaultQuery("size", "10")
-
-		pageNum, _ := strconv.Atoi(num)
-		if pageNum <= 0 {
-			pageNum = 1
-		}
-
-		pageSize, _ := strconv.Atoi(size)
-		if pageSize <= 0 {
-			pageSize = 10
-		}
-
+		pageNum, pageSize := getPaginationParams(c)
 		offset := (pageNum - 1) * pageSize
-		var dish []entity.Dish
-		if global.DB.Table("dish").Offset(offset).Limit(pageSize).Find(&dish).Error != nil {
+
+		var dishes []entity.Dish
+		var total int64
+		var err error
+
+		err = global.DB.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Table("dish").Count(&total).Error; err != nil {
+				return err
+			}
+			if err := tx.Table("dish").Offset(offset).Limit(pageSize).Find(&dishes).Error; err != nil {
+				return err
+			}
+			return nil
+		})
+
+		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "查询失败"})
 			return
 		}
-		var total int64
-		if global.DB.Table("dish").Count(&total).Error != nil {
+
+		dishDtos, err := getDishDtos(dishes)
+		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "查询失败"})
 			return
 		}
 
 		responseData := entity.ResponseData{
-			Records: dish,
+			Records: dishDtos,
 			Total:   total,
 		}
 
 		c.JSON(http.StatusOK, common.Success(responseData))
 	}
+}
+
+func getPaginationParams(c *gin.Context) (int, int) {
+	pageNum, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil || pageNum <= 0 {
+		pageNum = 1
+	}
+
+	pageSize, err := strconv.Atoi(c.DefaultQuery("size", "10"))
+	if err != nil || pageSize <= 0 {
+		pageSize = 10
+	}
+
+	return pageNum, pageSize
+}
+
+func getDishDtos(dishes []entity.Dish) ([]dto.DishDto, error) {
+	var dishDtos []dto.DishDto
+	for _, dish := range dishes {
+		var categoryName string
+		if err := global.DB.Table("category").Where("id = ?", dish.CategoryId).Select("name").Scan(&categoryName).Error; err != nil {
+			return nil, err
+		}
+		dishDto := dto.DishDto{
+			Dish:         dish,
+			CategoryName: categoryName,
+		}
+		dishDtos = append(dishDtos, dishDto)
+	}
+	return dishDtos, nil
 }

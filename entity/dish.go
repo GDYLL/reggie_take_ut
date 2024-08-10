@@ -8,7 +8,7 @@ import (
 type Dish struct {
 	ID          int64     `json:"id"`          // 菜品ID
 	Name        string    `json:"name"`        // 菜品名称
-	CategoryID  int64     `json:"categoryId"`  // 菜品分类ID
+	CategoryId  int64     `json:"categoryId"`  // 菜品分类ID
 	Price       float32   `json:"price"`       // 菜品价格
 	Code        string    `json:"code"`        // 商品码
 	Image       string    `json:"image"`       // 图片
