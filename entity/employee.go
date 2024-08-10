@@ -6,7 +6,7 @@ import (
 
 // Employee 员工实体
 type Employee struct {
-	ID         int64     `json:"id"`          // 员工ID
+	ID         string    `json:"id"`          // 员工ID
 	Username   string    `json:"username"`    // 用户名
 	Name       string    `json:"name"`        // 姓名
 	Password   string    `json:"password"`    // 密码

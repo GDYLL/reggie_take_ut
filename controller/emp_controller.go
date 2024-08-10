@@ -141,3 +141,46 @@ func (e EmployeeController) Page() gin.HandlerFunc {
 		context.JSON(http.StatusOK, common.Success(responseData))
 	}
 }
+
+func (e EmployeeController) Get() gin.HandlerFunc {
+	return func(context *gin.Context) {
+		id := context.Param("id")
+		if id == "" {
+			context.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+			return
+		}
+		var employee entity.Employee
+		if err := global.DB.Table("employee").Where("id = ?", id).First(&employee).Error; err != nil {
+			// 如果查询失败，返回错误信息
+			context.JSON(http.StatusInternalServerError, gin.H{"error": "查询失败"})
+			return
+		}
+		context.JSON(http.StatusOK, common.Success(employee))
+		return
+	}
+}
+
+func (e EmployeeController) Update() gin.HandlerFunc {
+	return func(context *gin.Context) {
+		var empInput entity.Employee
+		if err := context.ShouldBindJSON(&empInput); err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{
+				"error": "Invalid JSON",
+			})
+			return
+		}
+		id := empInput.ID
+		if id == "" {
+			context.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+			return
+		}
+		if err := global.DB.Table("employee").Where("id = ?", id).Updates(&empInput).Error; err != nil {
+			// 如果更新失败，返回错误信息
+			context.JSON(http.StatusInternalServerError, gin.H{"error": "更新失败"})
+			return
+		}
+		context.JSON(http.StatusOK, common.Success("更新成功"))
+		return
+	}
+
+}
