@@ -1,17 +1,17 @@
-package controller
+package handler
 
 import (
 	"errors"
 	"gorm.io/gorm"
 	"net/http"
+	"reggie_take_ut/internal/model"
+	"reggie_take_ut/pkg/common"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prynnekey/go-reggie/global"
 	"github.com/prynnekey/go-reggie/utils"
-	"reggie_take_ut/common"
-	"reggie_take_ut/entity"
 )
 
 type EmployeeController struct {
@@ -19,7 +19,7 @@ type EmployeeController struct {
 
 func (e EmployeeController) Login() gin.HandlerFunc {
 	return func(context *gin.Context) {
-		var empInput entity.Employee
+		var empInput model.Employee
 		if err := context.ShouldBindJSON(&empInput); err != nil {
 			context.JSON(http.StatusBadRequest, gin.H{
 				"error": "Invalid JSON",
@@ -29,7 +29,7 @@ func (e EmployeeController) Login() gin.HandlerFunc {
 		username := empInput.Username
 		password := utils.MD5(empInput.Password)
 
-		var empStored entity.Employee
+		var empStored model.Employee
 		if err := global.DB.Table("employee").Where("username = ?", username).First(&empStored).Error; err != nil {
 			context.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Database query failed",
@@ -52,14 +52,14 @@ func (e EmployeeController) Login() gin.HandlerFunc {
 
 func (e EmployeeController) Save() gin.HandlerFunc {
 	return func(context *gin.Context) {
-		var empInput entity.Employee
+		var empInput model.Employee
 		if err := context.ShouldBindJSON(&empInput); err != nil {
 			context.JSON(http.StatusBadRequest, gin.H{
 				"error": "Invalid JSON",
 			})
 			return
 		}
-		var empStored entity.Employee
+		var empStored model.Employee
 		if err := global.DB.Table("employee").Where("username = ?", empInput.Username).First(&empStored).Error; err != nil {
 			// 如果根据username找到记录，则说明已有同名用户，此时应该报错
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -114,7 +114,7 @@ func (e EmployeeController) Page() gin.HandlerFunc {
 		}
 
 		offset := (pageNum - 1) * pageSizeNum
-		var employees []entity.Employee
+		var employees []model.Employee
 		if emName != "" {
 			// 添加模糊查询条件
 			err = global.DB.Table("employee").Where("name LIKE ?", "%"+emName+"%").
@@ -134,7 +134,7 @@ func (e EmployeeController) Page() gin.HandlerFunc {
 			context.JSON(http.StatusInternalServerError, gin.H{"error": "查询失败"})
 			return
 		}
-		responseData := entity.ResponseData{
+		responseData := model.ResponseData{
 			Records: employees,
 			Total:   total,
 		}
@@ -149,7 +149,7 @@ func (e EmployeeController) Get() gin.HandlerFunc {
 			context.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
 			return
 		}
-		var employee entity.Employee
+		var employee model.Employee
 		if err := global.DB.Table("employee").Where("id = ?", id).First(&employee).Error; err != nil {
 			// 如果查询失败，返回错误信息
 			context.JSON(http.StatusInternalServerError, gin.H{"error": "查询失败"})
@@ -162,7 +162,7 @@ func (e EmployeeController) Get() gin.HandlerFunc {
 
 func (e EmployeeController) Update() gin.HandlerFunc {
 	return func(context *gin.Context) {
-		var empInput entity.Employee
+		var empInput model.Employee
 		if err := context.ShouldBindJSON(&empInput); err != nil {
 			context.JSON(http.StatusBadRequest, gin.H{
 				"error": "Invalid JSON",

@@ -2298,7 +2298,7 @@
               " \"" + key + "\". " +
               "Note that HTML attributes are case-insensitive and camelCased " +
               "props need to use their kebab-case equivalents when using in-DOM " +
-              "templates. You should probably use \"" + altKey + "\" instead of \"" + key + "\"."
+              "static. You should probably use \"" + altKey + "\" instead of \"" + key + "\"."
             );
           }
         }
@@ -2820,7 +2820,7 @@
     tree = cached[index] = this.$options.staticRenderFns[index].call(
       this._renderProxy,
       null,
-      this // for render fns generated for functional component templates
+      this // for render fns generated for functional component static
     );
     markStatic(tree, ("__static__" + index), false);
     return tree
@@ -3493,7 +3493,7 @@
     // bind the createElement fn to this instance
     // so that we get proper render context inside it.
     // args order: tag, data, children, normalizationType, alwaysNormalize
-    // internal version is used by render functions compiled from templates
+    // internal version is used by render functions compiled from static
     vm._c = function (a, b, c, d) { return createElement(vm, a, b, c, d, false); };
     // normalization is always applied for the public version, used in
     // user-written render functions.
@@ -3875,7 +3875,7 @@
             "Event \"" + lowerCaseEvent + "\" is emitted in component " +
             (formatComponentName(vm)) + " but the handler is registered for \"" + event + "\". " +
             "Note that HTML attributes are case-insensitive and you cannot use " +
-            "v-on to listen to camelCase events when using in-DOM templates. " +
+            "v-on to listen to camelCase events when using in-DOM static. " +
             "You should probably use \"" + (hyphenate(event)) + "\" instead of \"" + event + "\"."
           );
         }
@@ -4029,7 +4029,7 @@
           vm.$options.el || el) {
           warn(
             'You are using the runtime-only build of Vue where the template ' +
-            'compiler is not available. Either pre-compile the templates into ' +
+            'compiler is not available. Either pre-compile the static into ' +
             'render functions, or use the compiler-included build.',
             vm
           );
@@ -9767,7 +9767,7 @@
           element.forbidden = true;
           warn$2(
             'Templates should only be responsible for mapping the state to the ' +
-            'UI. Avoid placing tags with side-effects in your templates, such as ' +
+            'UI. Avoid placing tags with side-effects in your static, such as ' +
             "<" + tag + ">" + ', as they will not be parsed.',
             { start: element.start }
           );
@@ -10987,7 +10987,7 @@
   // hoist static sub-trees out
   function genStatic (el, state) {
     el.staticProcessed = true;
-    // Some elements (templates) need to behave differently inside of a v-pre
+    // Some elements (static) need to behave differently inside of a v-pre
     // node.  All pre nodes are static roots, so we can use this as a location to
     // wrap a state change and reset it upon exiting the pre node.
     var originalPreState = state.pre;
@@ -11677,7 +11677,7 @@
               'environment with Content Security Policy that prohibits unsafe-eval. ' +
               'The template compiler cannot work in this environment. Consider ' +
               'relaxing the policy to allow unsafe-eval or pre-compiling your ' +
-              'templates into render functions.'
+              'static into render functions.'
             );
           }
         }

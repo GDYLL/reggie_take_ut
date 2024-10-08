@@ -1,4 +1,4 @@
-package entity
+package model
 
 // User 用户信息实体
 type User struct {

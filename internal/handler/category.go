@@ -1,11 +1,11 @@
-package controller
+package handler
 
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/prynnekey/go-reggie/global"
 	"net/http"
-	"reggie_take_ut/common"
-	"reggie_take_ut/entity"
+	"reggie_take_ut/internal/model"
+	"reggie_take_ut/pkg/common"
 	"strconv"
 )
 
@@ -27,7 +27,7 @@ func (c CategoryController) Page() gin.HandlerFunc {
 		}
 
 		offset := (pageNum - 1) * pageSize
-		var category []entity.Category
+		var category []model.Category
 		if global.DB.Table("category").Offset(offset).Limit(pageSize).Find(&category).Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "查询失败"})
 			return
@@ -37,7 +37,7 @@ func (c CategoryController) Page() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "查询失败"})
 			return
 		}
-		responseData := entity.ResponseData{
+		responseData := model.ResponseData{
 			Records: category,
 			Total:   total,
 		}

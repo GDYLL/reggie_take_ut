@@ -1,13 +1,12 @@
-package controller
+package handler
 
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/prynnekey/go-reggie/global"
 	"gorm.io/gorm"
 	"net/http"
-	"reggie_take_ut/common"
-	"reggie_take_ut/dto"
-	"reggie_take_ut/entity"
+	"reggie_take_ut/internal/model"
+	"reggie_take_ut/pkg/common"
 	"strconv"
 )
 
@@ -19,7 +18,7 @@ func (dc DishController) Page() gin.HandlerFunc {
 		pageNum, pageSize := getPaginationParams(c)
 		offset := (pageNum - 1) * pageSize
 
-		var dishes []entity.Dish
+		var dishes []model.Dish
 		var total int64
 		var err error
 
@@ -44,7 +43,7 @@ func (dc DishController) Page() gin.HandlerFunc {
 			return
 		}
 
-		responseData := entity.ResponseData{
+		responseData := model.ResponseData{
 			Records: dishDtos,
 			Total:   total,
 		}
@@ -67,14 +66,14 @@ func getPaginationParams(c *gin.Context) (int, int) {
 	return pageNum, pageSize
 }
 
-func getDishDtos(dishes []entity.Dish) ([]dto.DishDto, error) {
-	var dishDtos []dto.DishDto
+func getDishDtos(dishes []model.Dish) ([]model.DishDto, error) {
+	var dishDtos []model.DishDto
 	for _, dish := range dishes {
 		var categoryName string
 		if err := global.DB.Table("category").Where("id = ?", dish.CategoryId).Select("name").Scan(&categoryName).Error; err != nil {
 			return nil, err
 		}
-		dishDto := dto.DishDto{
+		dishDto := model.DishDto{
 			Dish:         dish,
 			CategoryName: categoryName,
 		}

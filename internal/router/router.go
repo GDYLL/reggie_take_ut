@@ -19,5 +19,8 @@ func InitRouter() {
 	dishRouter(r)
 	commonRouter(r)
 
-	r.Run(":" + port)
+	err := r.Run(":" + port)
+	if err != nil {
+		return
+	}
 }

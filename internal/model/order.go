@@ -1,4 +1,4 @@
-package entity
+package model
 
 import (
 	"math/big"
@@ -21,4 +21,27 @@ type Orders struct {
 	Phone         string     `json:"phone"`           // 手机号
 	Address       string     `json:"address"`         // 地址
 	Consignee     string     `json:"consignee"`       // 收货人
+}
+
+// OrderDetail 订单明细实体
+type OrderDetail struct {
+	ID         int64      `json:"id"`          // 订单明细ID
+	Name       string     `json:"name"`        // 名称
+	OrderID    int64      `json:"order_id"`    // 订单ID
+	DishID     int64      `json:"dish_id"`     // 菜品ID
+	SetmealID  int64      `json:"setmeal_id"`  // 套餐ID
+	DishFlavor string     `json:"dish_flavor"` // 口味
+	Number     int        `json:"number"`      // 数量
+	Amount     *big.Float `json:"amount"`      // 金额
+	Image      string     `json:"image"`       // 图片
+}
+
+// OrdersDto 扩展的订单实体
+type OrdersDto struct {
+	Orders
+	UserName     string        `json:"user_name"`     // 用户名
+	Phone        string        `json:"phone"`         // 手机号
+	Address      string        `json:"address"`       // 地址
+	Consignee    string        `json:"consignee"`     // 收货人
+	OrderDetails []OrderDetail `json:"order_details"` // 订单明细列表
 }

@@ -8,3 +8,13 @@ database:
       username: root
       password: 12345
       dbname: reggie
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    password:
+    expire: 7200
+    max-active: 8
+    max-idle: 8
+    min-idle: 0
+    timeout: 30000
+    database: 0

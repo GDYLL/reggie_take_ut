@@ -1,4 +1,4 @@
-package entity
+package model
 
 type ResponseData struct {
 	Records interface{} `json:"records"`
