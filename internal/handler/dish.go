@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
+	"encoding/json"
 	"github.com/prynnekey/go-reggie/global"
 	"gorm.io/gorm"
 	"net/http"
@@ -13,52 +13,55 @@ import (
 type DishController struct {
 }
 
-func (dc DishController) Page() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		pageNum, pageSize := getPaginationParams(c)
-		offset := (pageNum - 1) * pageSize
+func (dc DishController) Page(w http.ResponseWriter, r *http.Request) {
+	pageNum, pageSize := getPaginationParams(r)
+	offset := (pageNum - 1) * pageSize
 
-		var dishes []model.Dish
-		var total int64
-		var err error
+	var dishes []model.Dish
+	var total int64
+	var err error
 
-		err = global.DB.Transaction(func(tx *gorm.DB) error {
-			if err := tx.Table("dish").Count(&total).Error; err != nil {
-				return err
-			}
-			if err := tx.Table("dish").Offset(offset).Limit(pageSize).Find(&dishes).Error; err != nil {
-				return err
-			}
-			return nil
-		})
-
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "查询失败"})
-			return
+	err = global.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Table("dish").Count(&total).Error; err != nil {
+			return err
 		}
-
-		dishDtos, err := getDishDtos(dishes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "查询失败"})
-			return
+		if err := tx.Table("dish").Offset(offset).Limit(pageSize).Find(&dishes).Error; err != nil {
+			return err
 		}
+		return nil
+	})
 
-		responseData := model.ResponseData{
-			Records: dishDtos,
-			Total:   total,
-		}
-
-		c.JSON(http.StatusOK, common.Success(responseData))
+	if err != nil {
+		http.Error(w, "查询失败", http.StatusInternalServerError)
+		return
 	}
+
+	dishDtos, err := getDishDtos(dishes)
+	if err != nil {
+		http.Error(w, "查询失败", http.StatusInternalServerError)
+		return
+	}
+
+	responseData := model.ResponseData{
+		Records: dishDtos,
+		Total:   total,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(common.Success(responseData))
+	if err != nil {
+		http.Error(w, "JSON 编码失败", http.StatusInternalServerError)
+	}
+	return
 }
 
-func getPaginationParams(c *gin.Context) (int, int) {
-	pageNum, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+func getPaginationParams(r *http.Request) (int, int) {
+	pageNum, err := strconv.Atoi(r.URL.Query().Get("page"))
 	if err != nil || pageNum <= 0 {
 		pageNum = 1
 	}
 
-	pageSize, err := strconv.Atoi(c.DefaultQuery("size", "10"))
+	pageSize, err := strconv.Atoi(r.URL.Query().Get("pageSize"))
 	if err != nil || pageSize <= 0 {
 		pageSize = 10
 	}

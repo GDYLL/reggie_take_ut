@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
+	"net/http"
 	"path/filepath"
 )
 
@@ -9,8 +9,9 @@ type CommonController struct{}
 
 var path = "static/images/"
 
-func (c CommonController) Download(context *gin.Context) {
-	image_name := context.Query("name")
-	imgUrl := filepath.Join(path, image_name)
-	context.FileAttachment(imgUrl, image_name)
+func (c CommonController) Download(w http.ResponseWriter, r *http.Request) {
+	imageName := r.URL.Query().Get("name")
+	imgUrl := filepath.Join(path, imageName)
+	w.Header().Add("Content-Disposition", "attachment;filename="+imageName)
+	http.ServeFile(w, r, imgUrl)
 }

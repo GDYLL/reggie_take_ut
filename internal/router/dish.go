@@ -1,15 +1,16 @@
 package router
 
 import (
-	"github.com/gin-gonic/gin"
+	"net/http"
 	"reggie_take_ut/internal/handler"
 )
 
-func dishRouter(r *gin.Engine) {
+func dishRouter(mux *http.ServeMux) {
 
-	dish := r.Group("/dish")
-	{
-		dish.GET("/page", handler.DishController{}.Page())
-	}
+	mux.HandleFunc("/dish/page", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			handler.DishController{}.Page(w, r)
+		}
+	})
 
 }

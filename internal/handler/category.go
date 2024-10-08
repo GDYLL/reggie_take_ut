@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
+	"encoding/json"
 	"github.com/prynnekey/go-reggie/global"
 	"net/http"
 	"reggie_take_ut/internal/model"
@@ -11,36 +11,42 @@ import (
 
 type CategoryController struct{}
 
-func (c CategoryController) Page() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		num := c.DefaultQuery("page", "1")
-		size := c.DefaultQuery("size", "10")
+func (c CategoryController) Page(w http.ResponseWriter, r *http.Request) {
 
-		pageNum, _ := strconv.Atoi(num)
-		if pageNum <= 0 {
-			pageNum = 1
-		}
+	num := r.URL.Query().Get("page")
+	size := r.URL.Query().Get("size")
 
-		pageSize, _ := strconv.Atoi(size)
-		if pageSize <= 0 {
-			pageSize = 10
-		}
+	pageNum, _ := strconv.Atoi(num)
+	if pageNum <= 0 {
+		pageNum = 1
+	}
 
-		offset := (pageNum - 1) * pageSize
-		var category []model.Category
-		if global.DB.Table("category").Offset(offset).Limit(pageSize).Find(&category).Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "查询失败"})
-			return
-		}
-		var total int64
-		if global.DB.Table("category").Count(&total).Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "查询失败"})
-			return
-		}
-		responseData := model.ResponseData{
-			Records: category,
-			Total:   total,
-		}
-		c.JSON(http.StatusOK, common.Success(responseData))
+	pageSize, _ := strconv.Atoi(size)
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+
+	offset := (pageNum - 1) * pageSize
+
+	var category []model.Category
+	if global.DB.Table("category").Offset(offset).Limit(pageSize).Find(&category).Error != nil {
+		http.Error(w, "查询失败", http.StatusInternalServerError)
+		return
+	}
+	var total int64
+	if global.DB.Table("category").Count(&total).Error != nil {
+		http.Error(w, "查询失败", http.StatusInternalServerError)
+		return
+	}
+	responseData := model.ResponseData{
+		Records: category,
+		Total:   total,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	err := json.NewEncoder(w).Encode(common.Success(responseData))
+	if err != nil {
+		http.Error(w, "JSON 编码失败", http.StatusInternalServerError)
 	}
 }

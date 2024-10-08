@@ -2,15 +2,14 @@ package config
 
 import (
 	"log"
-
-	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 // WebMvcConfig 配置静态资源映射
-func WebMvcConfig(router *gin.Engine) {
+func WebMvcConfig(mux *http.ServeMux) {
 	log.Println("开始进行静态资源映射...")
 
 	// 设置静态资源映射
-	router.Static("/backend", "./static/backend")
-	router.Static("/front", "./static/front")
+	mux.Handle("/backend/", http.StripPrefix("/backend/", http.FileServer(http.Dir("./static/backend"))))
+	mux.Handle("/front/", http.StripPrefix("/front/", http.FileServer(http.Dir("./static/front"))))
 }
