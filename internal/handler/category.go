@@ -9,7 +9,8 @@ import (
 	"strconv"
 )
 
-type CategoryController struct{}
+type CategoryController struct {
+}
 
 func (c CategoryController) Page(w http.ResponseWriter, r *http.Request) {
 
@@ -45,8 +46,10 @@ func (c CategoryController) Page(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	err := json.NewEncoder(w).Encode(common.Success(responseData))
+	err := json.NewEncoder(w).Encode(common.Result{}.Success(responseData))
 	if err != nil {
 		http.Error(w, "JSON 编码失败", http.StatusInternalServerError)
+		return
 	}
+	return
 }

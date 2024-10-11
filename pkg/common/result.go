@@ -7,8 +7,10 @@ type R struct {
 	Data interface{} `json:"data"` // 数据
 }
 
+type Result struct{}
+
 // Success 返回成功结果
-func Success(data interface{}) *R {
+func (r Result) Success(data interface{}) *R {
 	return &R{
 		Code: 1,
 		Msg:  "success",
@@ -17,7 +19,7 @@ func Success(data interface{}) *R {
 }
 
 // Error 返回失败结果
-func Error(msg string) *R {
+func (r Result) Error(msg string) *R {
 	return &R{
 		Code: 0,
 		Msg:  msg,

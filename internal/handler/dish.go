@@ -33,7 +33,6 @@ func (dc DishController) Page(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		http.Error(w, "查询失败", http.StatusInternalServerError)
-		return
 	}
 
 	dishDtos, err := getDishDtos(dishes)
@@ -48,9 +47,10 @@ func (dc DishController) Page(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(common.Success(responseData))
+	err = json.NewEncoder(w).Encode(common.Result{}.Success(responseData))
 	if err != nil {
 		http.Error(w, "JSON 编码失败", http.StatusInternalServerError)
+		return
 	}
 	return
 }

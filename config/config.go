@@ -3,17 +3,16 @@ package config
 import (
 	"fmt"
 	"github.com/go-redis/redis/v8"
-	"log"
-	"os"
-
 	"github.com/prynnekey/go-reggie/global"
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"log"
+	"os"
 )
 
-var RedisClient *redis.Client
+var _ *redis.Client
 
 func InitConfig() {
 	// 获取当前项目目录
@@ -34,11 +33,10 @@ func InitConfig() {
 
 	initMysql()
 	initRedis()
-
 }
 
 func initRedis() {
-	RedisClient = redis.NewClient(&redis.Options{})
+	_ = redis.NewClient(&redis.Options{})
 }
 
 func initMysql() {

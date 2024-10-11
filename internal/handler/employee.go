@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"gorm.io/gorm"
+	"log"
 	"net/http"
 	"reggie_take_ut/internal/model"
 	"reggie_take_ut/pkg/common"
+	"reggie_take_ut/pkg/session"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/prynnekey/go-reggie/global"
@@ -18,87 +21,139 @@ type EmployeeController struct {
 }
 
 func (e EmployeeController) Login(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 
+	// 1. 解析请求体
 	var empInput model.Employee
 	if err := json.NewDecoder(r.Body).Decode(&empInput); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		json.NewEncoder(w).Encode(common.Result{}.Error("Invalid request"))
+		return
 	}
+
+	// 2. 获取并验证用户信息
 	username := empInput.Username
 	password := utils.MD5(empInput.Password)
 
 	var empStored model.Employee
-	if err := global.DB.Table("employee").Where("username = ?", username).First(&empStored).Error; err != nil {
-		http.Error(w, "Database query failed", http.StatusInternalServerError)
-		return
-	}
-	if empStored.Status == 0 {
-		http.Error(w, "账号已禁用", http.StatusUnauthorized)
-		return
-	}
-	if empStored.Password == password {
-		w.Header().Set("Content-Type", "application/json")
-		err := json.NewEncoder(w).Encode(common.Success("login success"))
-		if err != nil {
-			http.Error(w, "系统错误", http.StatusInternalServerError)
+	result := global.DB.Table("employee").Where("username = ?", username).First(&empStored)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			json.NewEncoder(w).Encode(common.Result{}.Error("用户名或密码错误"))
 			return
 		}
-		return
-	} else {
-		http.Error(w, "用户名或密码不正确", http.StatusBadRequest)
+		json.NewEncoder(w).Encode(common.Result{}.Error("系统错误"))
 		return
 	}
 
+	// 3. 验证账号状态和密码
+	if empStored.Status == 0 {
+		json.NewEncoder(w).Encode(common.Result{}.Error("账号已禁用"))
+		return
+	}
+
+	if empStored.Password != password {
+		json.NewEncoder(w).Encode(common.Result{}.Error("用户名或密码错误"))
+		return
+	}
+
+	// 4. 登录成功，设置session
+	session, err := session.Store.Get(r, session.SessionName)
+	if err != nil {
+		log.Printf("获取session失败: %v", err)
+		json.NewEncoder(w).Encode(common.Result{}.Error("系统错误"))
+		return
+	}
+
+	// 设置session值，存储更多有用的信息
+	session.Values["employee_id"] = empStored.ID // 存储员工ID
+	session.Values["username"] = username
+	session.Values["authenticated"] = true
+
+	// 保存session
+	if err := session.Save(r, w); err != nil {
+		log.Printf("保存session失败: %v", err)
+		json.NewEncoder(w).Encode(common.Result{}.Error("系统错误"))
+		return
+	}
+
+	// 5. 返回成功响应
+	json.NewEncoder(w).Encode(common.Result{}.Success(map[string]interface{}{
+		"id":       empStored.ID,
+		"username": empStored.Username,
+		"name":     empStored.Name,
+	}))
+}
+
+func (e EmployeeController) Logout(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	session, err := session.Store.Get(r, session.SessionName)
+	if err != nil {
+		json.NewEncoder(w).Encode(common.Result{}.Error("系统错误"))
+		return
+	}
+
+	// 清除所有 session 值
+	session.Values = make(map[interface{}]interface{})
+
+	// 设置 session 过期
+	session.Options.MaxAge = -1
+
+	// 保存 session
+	if err := session.Save(r, w); err != nil {
+		json.NewEncoder(w).Encode(common.Result{}.Error("系统错误"))
+		return
+	}
+
+	json.NewEncoder(w).Encode(common.Result{}.Success("退出成功"))
 }
 
 func (e EmployeeController) Save(w http.ResponseWriter, r *http.Request) {
 	var empInput model.Employee
+	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewDecoder(r.Body).Decode(&empInput); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 	var empStored model.Employee
 	if err := global.DB.Table("employee").Where("username = ?", empInput.Username).First(&empStored).Error; err != nil {
-		// 如果根据username找到记录，则说明已有同名用户，此时应该报错
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// 设置默认密码
-			password := utils.MD5("123456")
-			// 设置创建时间和更新时间
+			password := utils.MD5(strconv.Itoa(123456))
 			now := time.Now()
-			// 填充Employee结构体的字段
 			empInput.Password = password
 			empInput.CreateTime = now
 			empInput.UpdateTime = now
 
 			if err := global.DB.Table("employee").Create(&empInput).Error; err != nil {
-				// 处理错误
 				http.Error(w, "Error inserting new employee record", http.StatusInternalServerError)
 				return
 			}
-			// 返回成功的响应
-			w.Header().Set("Content-Type", "application/json")
-			err := json.NewEncoder(w).Encode(common.Success("保存成功"))
+			err := json.NewEncoder(w).Encode(common.Result{}.Success("保存成功"))
 			if err != nil {
 				http.Error(w, "系统错误", http.StatusInternalServerError)
 				return
 			}
+			return
 		} else {
-			// 查询时出现错误，但不是因为记录未找到
-			http.Error(w, "Database query failed", http.StatusInternalServerError)
+			err := json.NewEncoder(w).Encode(common.Result{}.Success("Database query failed"))
+			if err != nil {
+				http.Error(w, "系统错误", http.StatusInternalServerError)
+				return
+			}
 			return
 		}
 	} else {
-		err := json.NewEncoder(w).Encode(common.Success("用户名已存在"))
+		err := json.NewEncoder(w).Encode(common.Result{}.Error("用户名已存在"))
 		if err != nil {
 			http.Error(w, "系统错误", http.StatusInternalServerError)
 			return
 		}
 		return
 	}
-	return
-
 }
 
 func (e EmployeeController) Page(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 
 	page := r.URL.Query().Get("page")
 	pageSize := r.URL.Query().Get("pageSize")
@@ -141,60 +196,72 @@ func (e EmployeeController) Page(w http.ResponseWriter, r *http.Request) {
 		Records: employees,
 		Total:   total,
 	}
-	w.Header().Set("Content-Type", "application/json")
 
-	if json.NewEncoder(w).Encode(common.Success(responseData)) != nil {
+	if json.NewEncoder(w).Encode(common.Result{}.Success(responseData)) != nil {
 		http.Error(w, "JSON 编码失败", http.StatusInternalServerError)
+		return
 	}
 	return
-
 }
 
 func (e EmployeeController) Get(w http.ResponseWriter, r *http.Request) {
-
-	id := r.URL.Query().Get("id")
-	if id == "" {
-		http.Error(w, "无效的ID", http.StatusBadRequest)
-		return
-	}
-	var employee model.Employee
-	if err := global.DB.Table("employee").Where("id = ?", id).First(&employee).Error; err != nil {
-		// 如果查询失败，返回错误信息
-		http.Error(w, "查询失败", http.StatusInternalServerError)
-		return
-	}
 	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(common.Success(employee))
+
+	id := strings.TrimPrefix(r.URL.Path, "/employee/")
+	if id == "" {
+		http.Error(w, "员工ID不能为空", http.StatusBadRequest)
+		return
+	}
+
+	_, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
+		http.Error(w, "无效的员工ID格式", http.StatusBadRequest)
+		return
+	}
+
+	var employee model.Employee
+	result := global.DB.Table("employee").Where("id = ?", id).First(&employee)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			http.Error(w, "未找到该员工", http.StatusNotFound)
+			return
+		}
+
+		log.Printf("查询员工信息失败: %v", result.Error)
+		http.Error(w, "查询员工信息失败", http.StatusInternalServerError)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(common.Result{}.Success(employee)); err != nil {
+		log.Printf("JSON编码失败: %v", err)
 		http.Error(w, "系统错误", http.StatusInternalServerError)
 		return
 	}
 	return
-
 }
 
 func (e EmployeeController) Update(w http.ResponseWriter, r *http.Request) {
 	var empInput model.Employee
+	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewDecoder(r.Body).Decode(&empInput); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 	id := empInput.ID
+	status := empInput.Status
 	if id == "" {
 		http.Error(w, "无效的ID", http.StatusBadRequest)
 		return
 	}
-	if err := global.DB.Table("employee").Where("id = ?", id).Updates(&empInput).Error; err != nil {
+	if err := global.DB.Table("employee").Where("id = ?", id).Update("status", status).Error; err != nil {
 		// 如果更新失败，返回错误信息
 		http.Error(w, "更新失败", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(common.Success("更新成功"))
+	err := json.NewEncoder(w).Encode(common.Result{}.Success("更新成功"))
 	if err != nil {
 		http.Error(w, "系统错误", http.StatusInternalServerError)
 		return
 	}
 	return
-
 }
