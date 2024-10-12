@@ -8,6 +8,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"gorm.io/gorm/schema"
 	"log"
 	"os"
 )
@@ -51,6 +52,10 @@ func initMysql() {
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
 		// 开启显示sql日志
 		Logger: logger.Default.LogMode(logger.Info),
+		// 禁用表名复数化
+		NamingStrategy: schema.NamingStrategy{
+			SingularTable: true,
+		},
 	})
 	if err != nil {
 		panic(err)

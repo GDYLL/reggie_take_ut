@@ -241,19 +241,23 @@ func (e EmployeeController) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (e EmployeeController) Update(w http.ResponseWriter, r *http.Request) {
+
+	// TODO Grom Updates struct 值为零不更新，待处理
+	//var empInput map[string]interface{}
 	var empInput model.Employee
+
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewDecoder(r.Body).Decode(&empInput); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 	id := empInput.ID
-	status := empInput.Status
 	if id == "" {
 		http.Error(w, "无效的ID", http.StatusBadRequest)
 		return
 	}
-	if err := global.DB.Table("employee").Where("id = ?", id).Update("status", status).Error; err != nil {
+
+	if err := global.DB.Model(&model.Employee{}).Where("id = ?", id).Updates(&empInput).Error; err != nil {
 		// 如果更新失败，返回错误信息
 		http.Error(w, "更新失败", http.StatusInternalServerError)
 		return

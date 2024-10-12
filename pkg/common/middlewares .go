@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"path"
 	"reggie_take_ut/pkg/session"
 	"strings"
 )
@@ -68,10 +67,18 @@ func LoginCheckMiddleware(next http.Handler) http.Handler {
 
 // checkPath 检查路径是否匹配排除列表
 func checkPath(urls []string, requestURI string) bool {
+	requestURI = strings.TrimSpace(requestURI)
 	for _, url := range urls {
-		matched, _ := path.Match(strings.Replace(url, "**", "*", -1), requestURI)
-		if matched {
-			return true
+		url = strings.TrimSpace(url)
+		if strings.HasSuffix(url, "/**") {
+			prefix := strings.TrimSuffix(url, "/**")
+			if strings.HasPrefix(requestURI, prefix) {
+				return true
+			}
+		} else {
+			if url == requestURI {
+				return true
+			}
 		}
 	}
 	return false
