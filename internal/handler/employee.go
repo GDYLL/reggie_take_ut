@@ -46,7 +46,7 @@ func (e EmployeeController) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 3. 验证账号状态和密码
-	if empStored.Status == 0 {
+	if *empStored.Status == 0 {
 		json.NewEncoder(w).Encode(common.Result{}.Error("账号已禁用"))
 		return
 	}
@@ -242,8 +242,6 @@ func (e EmployeeController) Get(w http.ResponseWriter, r *http.Request) {
 
 func (e EmployeeController) Update(w http.ResponseWriter, r *http.Request) {
 
-	// TODO Grom Updates struct 值为零不更新，待处理
-	//var empInput map[string]interface{}
 	var empInput model.Employee
 
 	w.Header().Set("Content-Type", "application/json")
@@ -257,7 +255,9 @@ func (e EmployeeController) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := global.DB.Model(&model.Employee{}).Where("id = ?", id).Updates(&empInput).Error; err != nil {
+	empInput.UpdateTime = time.Now()
+
+	if err := global.DB.Model(&model.Employee{}).Omit("id").Where("id = ?", id).Updates(&empInput).Error; err != nil {
 		// 如果更新失败，返回错误信息
 		http.Error(w, "更新失败", http.StatusInternalServerError)
 		return

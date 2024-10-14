@@ -31,7 +31,7 @@ func JSONError(w http.ResponseWriter, statusCode int, message string) {
 
 func LoginCheckMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("检查请求: %s %s", r.Method, r.URL.Path)
+		//log.Printf("检查请求: %s %s", r.Method, r.URL.Path)
 
 		// 检查是否是排除的路径
 		if checkPath(excludedURLs, r.URL.Path) {
@@ -57,7 +57,7 @@ func LoginCheckMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		log.Printf("用户已登录: %v", employeeID)
+		//log.Printf("用户已登录: %v", employeeID)
 
 		// 设置用户信息到上下文
 		ctx := context.WithValue(r.Context(), "employee_id", employeeID)

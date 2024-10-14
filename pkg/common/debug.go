@@ -11,7 +11,7 @@ func DebugMiddleware(next http.Handler) http.Handler {
 		log.Printf("=== 请求开始 ===")
 		log.Printf("方法: %s", r.Method)
 		log.Printf("路径: %s", r.URL.Path)
-		log.Printf("Cookie: %v", r.Cookies())
+		//log.Printf("Cookie: %v", r.Cookies())
 
 		// 尝试获取session
 		if sess, err := session.Store.Get(r, "employee-session"); err == nil {
