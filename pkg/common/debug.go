@@ -11,16 +11,16 @@ func DebugMiddleware(next http.Handler) http.Handler {
 		log.Printf("=== 请求开始 ===")
 		log.Printf("方法: %s", r.Method)
 		log.Printf("路径: %s", r.URL.Path)
-		//log.Printf("Cookie: %v", r.Cookies())
+		log.Printf("Cookie: %v", r.Cookies())
 
 		// 尝试获取session
-		if sess, err := session.Store.Get(r, "employee-session"); err == nil {
+		if sess, err := session.Store.Get(r, session.SessionName); err == nil {
 			log.Printf("Session值: %v", sess.Values)
 		} else {
 			log.Printf("获取session失败: %v", err)
 		}
 
 		next.ServeHTTP(w, r)
-		log.Printf("=== 请求结束 ===\n")
+		log.Printf("=== 请求结束 ===\n\n")
 	})
 }

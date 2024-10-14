@@ -80,11 +80,7 @@ func InitRouter() {
 	// 配置 Web MVC
 	config.WebMvcConfig(mux)
 
-	// 创建路由组
-	categoryGroup := NewRouteGroup(mux, "/category")
-	categoryRouter(categoryGroup)
-
-	// 注册其他路由
+	categoryRouter(mux)
 	employeeRouter(mux)
 	dishRouter(mux)
 	commonRouter(mux)
